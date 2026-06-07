@@ -1,11 +1,13 @@
 package com.dondoc.service;
 
 import com.dondoc.dto.FarmMembers;
+import com.dondoc.dto.FarmMembers.FarmJoinResponse;
 import com.dondoc.dto.Farms;
 import com.dondoc.entity.Farm;
 import com.dondoc.entity.FarmMember;
 import com.dondoc.repository.FarmMemberRepository;
 import com.dondoc.repository.FarmRepository;
+import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -50,11 +52,12 @@ public class FarmService {
         farmRepository.save(farm);
     }
 
-    public void createFarmMember(FarmMembers dto){
+    public FarmJoinResponse addFarmMember(long userId, long farmId){
         FarmMember farmMember = new FarmMember(
-                null, dto.getUserId(), dto.getFarmId(), dto.getJoinedAt()
+                null, userId, farmId, LocalDateTime.now()
         );
         farmMemberRepository.save(farmMember);
 
+        return new FarmJoinResponse(userId, farmId, farmMember.getJoinedAt());
     }
 }

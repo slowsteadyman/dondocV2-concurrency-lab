@@ -16,4 +16,13 @@ public class FarmMembers {
     private Long userId;
     private Long farmId;
     private LocalDateTime joinedAt;
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FarmJoinResponse {
+        private Long userId;
+        private Long farmId;
+        private LocalDateTime joinedAt;
+    }
 }
