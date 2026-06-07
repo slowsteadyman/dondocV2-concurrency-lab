@@ -1,8 +1,10 @@
 package com.dondoc.controller;
 
+import com.dondoc.dto.ApiResponse;
 import com.dondoc.dto.FarmMembers;
 import com.dondoc.dto.Farms;
 import com.dondoc.service.FarmService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,6 +37,17 @@ public class FarmController {
     @PostMapping("/members")
     public void createFarmMember(@RequestBody FarmMembers farmMember){
         farmService.createFarmMember(farmMember);
+    }
+
+    @DeleteMapping("/{farmId}")
+    public ResponseEntity<?> leaveFarm(
+            @RequestHeader(value = "userId", required = false) Long userId,
+            @PathVariable Long farmId) {
+        if (userId == null) {
+            return ResponseEntity.status(401)
+                    .body(new ApiResponse<>(false, null, "인증 토큰 없음"));
+        }
+        return ResponseEntity.ok(farmService.leaveFarm(farmId, userId));
     }
 
 
