@@ -1,9 +1,11 @@
 package com.dondoc.controller;
 
+import com.dondoc.dto.ApiResponse;
 import com.dondoc.dto.Categories;
 import com.dondoc.dto.MonthlyHistories;
 import com.dondoc.dto.Records;
 import com.dondoc.service.RecordService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,4 +49,16 @@ public class RecordController {
     public void createMonthlyHistory(@RequestBody MonthlyHistories monthlyHistory){
         recordService.createMonthlyHistory(monthlyHistory);
     }
+
+    @GetMapping
+    public ResponseEntity<?> getMonthlyRecords(
+            @RequestHeader(value = "userId", required = false) Long userId,
+            @RequestParam String yearMonth, @RequestParam(required = false) String type ){
+        if (userId == null){
+            return ResponseEntity.status(401)
+                    .body(new ApiResponse<>(false, null, "인증 토큰 없음"));
+        }
+        return ResponseEntity.ok(recordService.getMonthlyRecords(userId, yearMonth, type));
+    }
+
 }

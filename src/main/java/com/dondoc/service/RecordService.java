@@ -1,8 +1,6 @@
 package com.dondoc.service;
 
-import com.dondoc.dto.Categories;
-import com.dondoc.dto.MonthlyHistories;
-import com.dondoc.dto.Records;
+import com.dondoc.dto.*;
 import com.dondoc.entity.Category;
 import com.dondoc.entity.MonthlyHistory;
 import com.dondoc.entity.Recorde;
@@ -90,6 +88,29 @@ public class RecordService {
                 dto.getType()
         );
         categoryRepository.save(category);
+    }
+
+    //  1. repository에서 records 가져오기
+    //  2. stream으로 수입/지출 합계 계산
+    //  3. summary + records 합쳐서 응답 반환
+    public ApiResponse<RecordMonthlyResponse> getMonthlyRecords(Long userId, String yearMonth, String type) {
+        List<RecordItemResponse> records = recordRepository.findByUserMonth(userId, yearMonth, type);
+
+        long totalIncome = records.stream()
+                .filter(r -> r.getType().equals("INCOME"))
+                .mapToLong(RecordItemResponse::getAmount)
+                .sum();
+
+        long totalExpense = records.stream()
+                .filter(r -> r.getType().equals("EXPENSE"))
+                .mapToLong(RecordItemResponse::getAmount)
+                .sum();
+
+        RecordSummary summary = new RecordSummary(totalIncome, totalExpense, totalIncome - totalExpense);
+        RecordMonthlyResponse data = new RecordMonthlyResponse(summary, records);
+
+        return new ApiResponse<>(true, data, "거래 내역 조회 성공");
+
     }
 
 }
