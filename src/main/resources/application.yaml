@@ -5,5 +5,5 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/dondoc
     username: root
-    password:
+    password: soonja0806
     driver-class-name: com.mysql.cj.jdbc.Driver
