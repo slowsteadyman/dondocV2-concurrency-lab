@@ -23,8 +23,8 @@ public class UserController {
 
     // PostMapping - POST 요청을 받는 엔드포인트
     // @RequestBody - 요청 body의 JSON을 Users 객체로 변환
-    @PostMapping
-    public void createUser(@RequestBody Users user){
-        userService.createUser(user);
-    }
+//    @PostMapping
+//    public void createUser(@RequestBody Users user){
+//        userService.createUser(user);
+//    }
 }

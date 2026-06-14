@@ -30,27 +30,9 @@ public class UserService {
                         entity.getCurrentCharacterLevel(),
                         entity.getMonthlyIncome(),
                         entity.getTargetExpenseRatio(),
-                        entity.getCreatedAt()
+                        entity.getCreatedAt(),
+                        entity.getLastLoginAt()
                 ))
                 .collect(Collectors.toList());
     }
-
-    public void createUser(Users dto){
-        User user = new User(
-                null,
-                dto.getUserId(),
-                dto.getUserPassword(),
-                dto.getName(),
-                dto.getAge(),
-                dto.getCurrentPigLevel(),
-                dto.getCurrentHouseLevel(),
-                dto.getCurrentCharacterLevel(),
-                dto.getMonthlyIncome(),
-                dto.getTargetExpenseRatio(),
-                dto.getCreatedAt()
-        );
-        userRepository.save(user);
-    }
-
-
 }

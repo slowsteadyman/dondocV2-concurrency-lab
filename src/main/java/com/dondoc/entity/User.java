@@ -21,4 +21,5 @@ public class User {
     private Long monthlyIncome;
     private Integer targetExpenseRatio;
     private LocalDateTime createdAt;
+    private LocalDateTime lastLoginAt;
 }
