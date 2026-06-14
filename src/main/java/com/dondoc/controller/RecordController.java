@@ -25,11 +25,6 @@ public class RecordController {
         this.recordService = recordService;
     }
 
-    /*@GetMapping
-    public List<Records> getRecords() {
-        return recordService.getRecords();
-    }*/
-
     @GetMapping("/categories")
     public List<Categories.Category> getCategories() {
         return recordService.getCategories();
@@ -55,6 +50,15 @@ public class RecordController {
         recordService.createMonthlyHistory(monthlyHistory);
     }
 
+    @DeleteMapping("/{recordId}")
+    public ResponseEntity<ApiResponse<Records.DeleteResponse>> deleteRecord(
+            @RequestHeader(value = "userId", required = false) Long userId,
+            @PathVariable Long recordId
+    ) {
+        Records.DeleteResponse response = recordService.deleteRecord(userId, recordId);
+        return ResponseEntity.ok(ApiResponse.ok(response, "거래 삭제 성공"));
+    }
+  
     @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<RecordUpdateResponse>> updateRecord(
             @RequestHeader("userId") long userId,

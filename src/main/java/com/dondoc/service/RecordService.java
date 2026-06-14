@@ -14,6 +14,7 @@ import com.dondoc.repository.CategoryRepository;
 import com.dondoc.repository.MonthlyHistoryRepository;
 import com.dondoc.repository.RecordRepository;
 import com.dondoc.repository.UserRepository;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -23,11 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-
 
 @Service
 public class RecordService {
@@ -43,10 +43,10 @@ public class RecordService {
         this.userRepository = userRepository;
     }
 
-    public List<Records> getRecords(){
+    public List<Records.Record> getRecords(){
         List<Recorde> entities = recordRepository.findAll();
         return entities.stream()
-                .map(entity -> new Records(
+                .map(entity -> new Records.Record(
                         entity.getId(),
                         entity.getUserId(),
                         entity.getCategoryId(),
@@ -118,6 +118,22 @@ public class RecordService {
                 dto.getType()
         );
         categoryRepository.save(category);
+    }
+
+    public Records.DeleteResponse deleteRecord(Long userId, Long recordId) {
+        if (userId == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "인증 토큰 없음");
+        }
+
+        Recorde record = recordRepository.findById(recordId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "거래를 찾을 수 없음"));
+
+        if (!record.getUserId().equals(userId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "본인 거래가 아님");
+        }
+
+        recordRepository.deleteById(recordId);
+        return new Records.DeleteResponse(recordId);
     }
 
     public RecordUpdateResponse updateRecord(long userId, long id, RecordUpdateRequest dto) {

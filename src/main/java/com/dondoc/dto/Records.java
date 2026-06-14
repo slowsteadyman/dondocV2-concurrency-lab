@@ -19,6 +19,27 @@ public class Records {
     private LocalDateTime createdAt;
   
     @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Record {
+        private Long id;
+        private Long userId;
+        private Long categoryId;
+        private Long amount;
+        private String description;
+        private String memo;
+        private LocalDate recordDate;
+        private LocalDateTime createdAt;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class DeleteResponse {
+        private Long recordId;
+    }
+
+    @Getter
     @AllArgsConstructor
     public static class MonthlySettlementResponse {
         private final String month;

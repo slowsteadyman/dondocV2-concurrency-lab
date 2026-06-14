@@ -10,7 +10,9 @@ import org.springframework.cglib.core.Local;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.dao.EmptyResultDataAccessException;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -25,6 +27,16 @@ import java.util.Optional;
 public class RecordRepository {
 
     private final JdbcTemplate jdbcTemplate;
+    private final RowMapper<Recorde> recordRowMapper = (rs, rowNum) -> new Recorde(
+            rs.getLong("id"),
+            rs.getLong("user_id"),
+            rs.getLong("category_id"),
+            rs.getLong("amount"),
+            rs.getString("description"),
+            rs.getString("memo"),
+            rs.getObject("record_date", LocalDate.class),
+            rs.getObject("created_at", LocalDateTime.class)
+    );
 
     public RecordRepository(JdbcTemplate jdbcTemplate){
         this.jdbcTemplate = jdbcTemplate;
@@ -32,16 +44,17 @@ public class RecordRepository {
   
     public List<Recorde> findAll(){
         String sql = "SELECT * FROM records";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> new Recorde(
-                rs.getLong("id"),
-                rs.getLong("user_id"),
-                rs.getLong("category_id"),
-                rs.getLong("amount"),
-                rs.getString("description"),
-                rs.getString("memo"),
-                rs.getObject("record_date", LocalDate.class),
-                rs.getObject("created_at", LocalDateTime.class)
-        ));
+        return jdbcTemplate.query(sql, recordRowMapper);
+    }
+
+    public Optional<Recorde> findById(Long id) {
+        String sql = "SELECT * FROM records WHERE id = ?";
+
+        try {
+            return Optional.ofNullable(jdbcTemplate.queryForObject(sql, recordRowMapper, id));
+        } catch (EmptyResultDataAccessException exception) {
+            return Optional.empty();
+        }
     }
 
     public MonthlyRecordTotal findMonthlyTotal(Long userId, LocalDate startDate, LocalDate endDate) {
@@ -201,5 +214,10 @@ public class RecordRepository {
                 rs.getString("category_name"),
                 rs.getLong("amount")
         ), userId, startDate, endDate);
+    }
+
+    public int deleteById(Long id) {
+        String sql = "DELETE FROM records WHERE id = ?";
+        return jdbcTemplate.update(sql, id);
     }
 }
