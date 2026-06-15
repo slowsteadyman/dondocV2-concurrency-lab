@@ -1,8 +1,8 @@
 package com.dondoc.repository;
 
 
-import com.dondoc.dto.auth.SignUpRequest;
 import com.dondoc.dto.Users;
+import com.dondoc.dto.auth.SignUpRequest;
 import com.dondoc.entity.User;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -11,7 +11,6 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
-import javax.swing.text.html.Option;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -66,7 +65,7 @@ public class UserRepository {
     }
 
     public Long save(SignUpRequest user){
-        String sql = "INSERT INTO users (user_id, user_password, name, age, current_pig_level, current_house_level, current_character_level, monthly_income, target_expense_ratio ,last_login_at) VALUES (?, ?, ?, 0, default, default, default, 0, 0, null)";
+        String sql = "INSERT INTO users (user_id, user_password, name, age, current_pig_level, current_house_level, current_character_level, monthly_income, target_expense_ratio , last_login_at) VALUES (?, ?, ?, 0, default, default, default, 0, 0, null)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(con -> {
             PreparedStatement pstmt = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -111,7 +110,6 @@ public class UserRepository {
                 id
         );
     }
-
 
     public void updateLastLoginAt(Long id) {
         String sql = "UPDATE users SET last_login_at = NOW() WHERE id = ?";

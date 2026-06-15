@@ -40,9 +40,7 @@ public class FarmDetailService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "인증 토큰 없음"));
 
-        if (!farmMemberRepository.existsByFarmIdAndUserId(farmId, userId)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "농장 멤버가 아님");
-        }
+        boolean joined = farmMemberRepository.existsByFarmIdAndUserId(farmId, userId);
 
         List<FarmMemberDetail> memberDetails = farmMemberRepository.findMemberDetailsByFarmId(farmId);
         List<FarmDetailMemberResponse> members = memberDetails.stream()
@@ -59,7 +57,7 @@ public class FarmDetailService {
                 farm.getId(),
                 farm.getName(),
                 members.size(),
-                true,
+                joined,
                 members
         );
     }
