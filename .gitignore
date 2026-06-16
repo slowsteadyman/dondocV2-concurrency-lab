@@ -44,3 +44,6 @@ CLAUDE.md
 
 # Android SDK 경로 등 민감한 정보
 local.properties
+
+# 로컬 환경 설정 (DB 비밀번호 등 민감한 정보)
+src/main/resources/application-local.yaml
