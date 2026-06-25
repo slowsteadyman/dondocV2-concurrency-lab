@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/dondoc
     username: root
-    password:
+    password: asdf
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
