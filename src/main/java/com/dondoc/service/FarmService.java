@@ -1,97 +1,50 @@
 package com.dondoc.service;
 
-import com.dondoc.dto.FarmMembers;
-import com.dondoc.dto.FarmMembers.FarmJoinResponse;
 import com.dondoc.dto.ApiResponse;
+import com.dondoc.dto.FarmMembers.FarmJoinResponse;
 import com.dondoc.dto.Farms;
+import com.dondoc.dto.Farms.FarmDetailMemberResponse;
+import com.dondoc.dto.Farms.FarmDetailResponse;
 import com.dondoc.entity.Farm;
 import com.dondoc.entity.FarmMember;
 import com.dondoc.exception.ApiException;
 import com.dondoc.repository.FarmMemberRepository;
 import com.dondoc.repository.FarmRepository;
 import com.dondoc.repository.UserRepository;
+import com.dondoc.repository.projection.FarmMemberDetail;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.time.LocalDateTime;
 
 @Service
 public class FarmService {
+
     private final FarmRepository farmRepository;
     private final FarmMemberRepository farmMemberRepository;
     private final UserRepository userRepository;
 
-    public FarmService(FarmRepository farmRepository, FarmMemberRepository farmMemberRepository, UserRepository userRepository){
+    public FarmService(
+            FarmRepository farmRepository,
+            FarmMemberRepository farmMemberRepository,
+            UserRepository userRepository) {
         this.farmRepository = farmRepository;
         this.farmMemberRepository = farmMemberRepository;
         this.userRepository = userRepository;
     }
 
-    public List<Farms.Farm> getFarms(){
-        List<Farm> entities = farmRepository.findAll();
-        return entities.stream()
-                .map(entity -> new Farms.Farm(
-                        entity.getId(),
-                        entity.getName(),
-                        entity.getCreatedAt()
-                ))
-                .collect(Collectors.toList());
-    }
-
-    public List<Farms.Member> getFarmMembers(){
-        List<FarmMember> entities = farmMemberRepository.findAll();
-        return entities.stream()
-                .map(entity -> new Farms.Member(
-                        entity.getId(),
-                        entity.getUserId(),
-                        entity.getFarmId(),
-                        entity.getJoinedAt()
-                )).collect(Collectors.toList());
-    }
-
-    public void createFarm(Farms.Farm dto){
-        Farm farm = new Farm(
-                null, dto.getName(), dto.getCreatedAt()
-        );
-        farmRepository.save(farm);
-    }
-
-    public FarmJoinResponse addFarmMember(long userId, long farmId){
-        farmRepository.findById(farmId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "존재하지 않는 농장입니다."));
-
-        farmMemberRepository.findByUserIdAndFarmId(userId, farmId)
-                .ifPresent(m -> new ApiException(HttpStatus.CONFLICT, "이미 가입한 농장입니다."));
-
-        FarmMember farmMember = new FarmMember(
-                null, userId, farmId, LocalDateTime.now()
-        );
-        farmMemberRepository.save(farmMember);
-
-        return new FarmJoinResponse(userId, farmId, farmMember.getJoinedAt());
-    }
-
-    public void createFarmMember(Farms.Member dto){
-        FarmMember farmMember = new FarmMember(
-            null, dto.getUserId(), dto.getFarmId(), dto.getJoinedAt()
-        );
-        farmMemberRepository.save(farmMember);
-
-    }
+    // ── 농장 조회 ─────────────────────────────────────────────────────────────
 
     public List<Farms.FarmGetResponse> getFarmList(Long userId) {
-        // 정합성 검사
-        userRepository.findById(userId).orElseThrow(()-> new ApiException(HttpStatus.UNAUTHORIZED, "존재하지 않는 사용자"));
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "존재하지 않는 사용자"));
 
-        // 모든 농장 목록 가져오기
         List<Farm> farms = farmRepository.findAll();
-        // <농장 id, 농장 회원 수> map 가져오기
         Map<Long, Integer> memberCountMap = farmMemberRepository.findMemberCount();
-        // userId 사용자가 참여 중인 농장 id 리스트 가져오기
         List<Long> joinedFarms = farmMemberRepository.findJoinedFarmIdsByUserId(userId);
 
         return farms.stream().map(farm -> new Farms.FarmGetResponse(
@@ -102,6 +55,40 @@ public class FarmService {
                 farm.getCreatedAt())
         ).collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public FarmDetailResponse getFarmDetail(Long userId, Long farmId) {
+        if (userId == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "인증 토큰 없음");
+        }
+
+        Farm farm = farmRepository.findById(farmId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "존재하지 않는 농장"));
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "인증 토큰 없음"));
+
+        boolean joined = farmMemberRepository.existsByFarmIdAndUserId(farmId, userId);
+
+        List<FarmMemberDetail> memberDetails = farmMemberRepository.findMemberDetailsByFarmId(farmId);
+        List<FarmDetailMemberResponse> members = memberDetails.stream()
+                .map(member -> new FarmDetailMemberResponse(
+                        member.getUserId(),
+                        member.getName(),
+                        member.getCurrentPigLevel(),
+                        member.getCurrentHouseLevel(),
+                        member.getJoinedAt()))
+                .toList();
+
+        return new FarmDetailResponse(
+                farm.getId(),
+                farm.getName(),
+                members.size(),
+                joined,
+                members);
+    }
+
+    // ── 농장 생성 ─────────────────────────────────────────────────────────────
 
     @Transactional
     public Farms.CreateResponse createFarm(Long userId, Farms.CreateRequest request) {
@@ -121,8 +108,8 @@ public class FarmService {
 
         LocalDateTime createdAt = LocalDateTime.now();
         Farm farm = new Farm(null, farmName, createdAt);
-        Farm saveFarm=farmRepository.save(farm);
-        Long farmId = saveFarm.getId();
+        Farm savedFarm = farmRepository.save(farm);
+        Long farmId = savedFarm.getId();
 
         FarmMember farmMember = new FarmMember(null, userId, farmId, createdAt);
         farmMemberRepository.save(farmMember);
@@ -130,13 +117,27 @@ public class FarmService {
         return new Farms.CreateResponse(farmId, farmName, true, createdAt);
     }
 
+    // ── 농장 가입 / 탈퇴 ──────────────────────────────────────────────────────
+
+    public FarmJoinResponse addFarmMember(long userId, long farmId) {
+        farmRepository.findById(farmId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "존재하지 않는 농장입니다."));
+
+        farmMemberRepository.findByUserIdAndFarmId(userId, farmId)
+                .ifPresent(m -> {
+                    throw new ApiException(HttpStatus.CONFLICT, "이미 가입한 농장입니다.");
+                });
+
+        FarmMember farmMember = new FarmMember(null, userId, farmId, LocalDateTime.now());
+        farmMemberRepository.save(farmMember);
+
+        return new FarmJoinResponse(userId, farmId, farmMember.getJoinedAt());
+    }
+
     @Transactional
     public ApiResponse<Farms.LeaveResponse> leaveFarm(Long farmId, Long userId) {
         if (userId == null) {
-            throw new ApiException(
-                    HttpStatus.UNAUTHORIZED,
-                    "인증되지 않은 사용자입니다."
-            );
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "인증되지 않은 사용자입니다.");
         }
 
         int deletedCount = farmMemberRepository.deleteByFarmIdAndUserId(farmId, userId);
@@ -153,4 +154,35 @@ public class FarmService {
         return new ApiResponse<>(true, data, null);
     }
 
+    // ── 내부 / 레거시 ─────────────────────────────────────────────────────────
+
+    public List<Farms.Farm> getFarms() {
+        return farmRepository.findAll().stream()
+                .map(entity -> new Farms.Farm(
+                        entity.getId(),
+                        entity.getName(),
+                        entity.getCreatedAt()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Farms.Member> getFarmMembers() {
+        return farmMemberRepository.findAll().stream()
+                .map(entity -> new Farms.Member(
+                        entity.getId(),
+                        entity.getUserId(),
+                        entity.getFarmId(),
+                        entity.getJoinedAt()))
+                .collect(Collectors.toList());
+    }
+
+    public void createFarm(Farms.Farm dto) {
+        Farm farm = new Farm(null, dto.getName(), dto.getCreatedAt());
+        farmRepository.save(farm);
+    }
+
+    public void createFarmMember(Farms.Member dto) {
+        FarmMember farmMember = new FarmMember(
+                null, dto.getUserId(), dto.getFarmId(), dto.getJoinedAt());
+        farmMemberRepository.save(farmMember);
+    }
 }
